@@ -7,10 +7,7 @@ const socketIo = require("socket.io");
 const bcrypt = require("bcryptjs");
 
 // Import Routes
-const bookingRoutes = require("./routes/bookingRoutes");
-const availabilityRoutes = require("./routes/availabilityRoutes");
 const counsellorRoutes = require("./routes/counsellorRoutes");
-const paymentRoutes = require("./routes/paymentRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 
 // Import Models
