@@ -4,7 +4,6 @@ const mongoose = require("mongoose");
 const cors = require("cors");
 const http = require("http");
 const socketIo = require("socket.io");
-const bcrypt = require("bcryptjs");
 
 // Initialize App
 const app = express();
@@ -37,36 +36,13 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-// ✅ Routes
-app.use("/api/bookings", bookingRoutes);
-app.use("/api/availability", availabilityRoutes);
-app.use("/api/counsellors", counsellorRoutes);
-app.use("/api/payments", paymentRoutes);
-app.use("/api/chat", chatRoutes);
+// ✅ Routes (all commented out to avoid errors)
+// const counsellorRoutes = require("./routes/counsellorRoutes");
+// const chatRoutes = require("./routes/chatRoutes");
+// app.use("/api/counsellors", counsellorRoutes);
+// app.use("/api/chat", chatRoutes);
 
-// ✅ Admin Login
-app.post("/api/admin/login", async (req, res) => {
-  try {
-    const { username, password } = req.body;
-    const admin = await Admin.findOne({ username });
-
-    if (!admin) {
-      return res.status(401).json({ success: false, error: "Invalid credentials" });
-    }
-
-    const isMatch = await bcrypt.compare(password, admin.password);
-    if (!isMatch) {
-      return res.status(401).json({ success: false, error: "Invalid credentials" });
-    }
-
-    res.json({ success: true, message: "Login successful" });
-  } catch (err) {
-    console.error("Login error:", err);
-    res.status(500).json({ success: false, error: "Server error" });
-  }
-});
-
-// ✅ Socket.io for Chat
+// ✅ Socket.io for Chat (can still run without routes)
 const io = socketIo(server, {
   cors: {
     origin: [
