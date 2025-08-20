@@ -1,5 +1,4 @@
 // server.js
-require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const cors = require("cors");
@@ -28,18 +27,20 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      "http://localhost:3000", // React local dev
-      "http://localhost:5000", // Backend local dev
-      "https://theonlineconfidant.com", // Your frontend domain
+      "http://localhost:3000",
+      "http://localhost:5000",
+      "https://theonlineconfidant.com",
     ],
     methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
-// ✅ MongoDB Connection
+// ✅ MongoDB Connection (direct URI)
+const mongoURI = "mongodb+srv://omarbusolo:uQDq3gPfOzcbGHne@confidant.h75mpi8.mongodb.net/counsellingdb?retryWrites=true&w=majority&appName=confidant";
+
 mongoose
-  .connect(process.env.MONGO_URI, {
+  .connect(mongoURI, {
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
@@ -53,7 +54,7 @@ app.use("/api/counsellors", counsellorRoutes);
 app.use("/api/payments", paymentRoutes);
 app.use("/api/chat", chatRoutes);
 
-// ✅ Admin Login (secure with bcrypt)
+// ✅ Admin Login
 app.post("/api/admin/login", async (req, res) => {
   try {
     const { username, password } = req.body;
@@ -104,7 +105,7 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Start Server
+// ✅ Start Server (Render uses its own PORT)
 const PORT = process.env.PORT || 5000;
 server.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
