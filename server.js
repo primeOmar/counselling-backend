@@ -1,49 +1,27 @@
 // server.js
 const express = require("express");
-const mongoose = require("mongoose");
-const cors = require("cors");
 const http = require("http");
-const socketIo = require("socket.io");
+const cors = require("cors");
+const { Server } = require("socket.io");
 
-// Initialize App
 const app = express();
 const server = http.createServer(app);
 
 // Middleware
 app.use(express.json());
-
-// ✅ CORS Setup
 app.use(
   cors({
     origin: [
-      "http://localhost:3000",
-      "http://localhost:5000",
-      "https://theonlineconfidant.com",
+      "http://localhost:3000",            // local dev
+      "https://theonlineconfidant.com",   // your live frontend
     ],
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    methods: ["GET", "POST"],
     credentials: true,
   })
 );
 
-// ✅ MongoDB Connection (direct URI)
-const mongoURI = "mongodb+srv://omarbusolo:uQDq3gPfOzcbGHne@confidant.h75mpi8.mongodb.net/counsellingdb?retryWrites=true&w=majority&appName=confidant";
-
-mongoose
-  .connect(mongoURI, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
-  .then(() => console.log("✅ MongoDB connected"))
-  .catch((err) => console.error("❌ MongoDB connection error:", err));
-
-// ✅ Routes (all commented out to avoid errors)
-// const counsellorRoutes = require("./routes/counsellorRoutes");
-// const chatRoutes = require("./routes/chatRoutes");
-// app.use("/api/counsellors", counsellorRoutes);
-// app.use("/api/chat", chatRoutes);
-
-// ✅ Socket.io for Chat (can still run without routes)
-const io = socketIo(server, {
+// Socket.io setup
+const io = new Server(server, {
   cors: {
     origin: [
       "http://localhost:3000",
@@ -52,18 +30,20 @@ const io = socketIo(server, {
     methods: ["GET", "POST"],
     credentials: true,
   },
+  transports: ["websocket", "polling"], // fallback if WebSocket fails
 });
 
 io.on("connection", (socket) => {
   console.log("🔌 New client connected:", socket.id);
 
-  socket.on("joinRoom", ({ room }) => {
-    socket.join(room);
-    console.log(`Client ${socket.id} joined room ${room}`);
-  });
+  // Join a default room for anonymous chat
+  const room = "anonymous";
+  socket.join(room);
 
   socket.on("sendMessage", (data) => {
-    io.to(data.room).emit("receiveMessage", data);
+    console.log("📨 Message received:", data);
+    // Broadcast to all clients in the room
+    io.to(room).emit("receiveMessage", data);
   });
 
   socket.on("disconnect", () => {
@@ -71,8 +51,6 @@ io.on("connection", (socket) => {
   });
 });
 
-// ✅ Start Server (Render uses its own PORT)
+// Start server
 const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`🚀 Server running on port ${PORT}`);
-});
+server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
