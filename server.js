@@ -6,9 +6,6 @@ const http = require("http");
 const socketIo = require("socket.io");
 const bcrypt = require("bcryptjs");
 
-// Import Models
-const Admin = require("./models/Admin");
-
 // Initialize App
 const app = express();
 const server = http.createServer(app);
