@@ -1,9 +1,10 @@
-// server.js
 const express = require("express");
-const http = require("http");
+const mongoose = require("mongoose");
 const cors = require("cors");
-const { Server } = require("socket.io");
+const http = require("http");
+const socketIo = require("socket.io");
 
+// Initialize App
 const app = express();
 const server = http.createServer(app);
 
@@ -12,16 +13,37 @@ app.use(express.json());
 app.use(
   cors({
     origin: [
-      "http://localhost:3000",            // local dev
-      "https://theonlineconfidant.com",   // your live frontend
+      "http://localhost:3000",
+      "https://theonlineconfidant.com",
     ],
-    methods: ["GET", "POST"],
+    methods: ["GET", "POST", "PUT", "DELETE"],
     credentials: true,
   })
 );
 
-// Socket.io setup
-const io = new Server(server, {
+// MongoDB connection
+const mongoURI =
+  "mongodb+srv://omarbusolo:uQDq3gPfOzcbGHne@confidant.h75mpi8.mongodb.net/counsellingdb?retryWrites=true&w=majority&appName=confidant";
+
+mongoose
+  .connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
+
+// Message Schema with TTL
+const messageSchema = new mongoose.Schema({
+  sender: String,
+  text: String,
+  timestamp: { type: Date, default: Date.now },
+});
+
+// TTL index: messages expire after 3 hours (10800 seconds)
+messageSchema.index({ timestamp: 1 }, { expireAfterSeconds: 3 * 60 * 60 });
+
+const Message = mongoose.model("Message", messageSchema);
+
+// Socket.IO
+const io = socketIo(server, {
   cors: {
     origin: [
       "http://localhost:3000",
@@ -30,20 +52,22 @@ const io = new Server(server, {
     methods: ["GET", "POST"],
     credentials: true,
   },
-  transports: ["websocket", "polling"], // fallback if WebSocket fails
 });
 
-io.on("connection", (socket) => {
+io.on("connection", async (socket) => {
   console.log("🔌 New client connected:", socket.id);
 
-  // Join a default room for anonymous chat
-  const room = "anonymous";
-  socket.join(room);
+  // Send last 20 messages
+  const lastMessages = await Message.find({})
+    .sort({ timestamp: -1 })
+    .limit(20)
+    .sort({ timestamp: 1 }); // Re-sort ascending
+  socket.emit("chat_history", lastMessages);
 
-  socket.on("sendMessage", (data) => {
-    console.log("📨 Message received:", data);
-    // Broadcast to all clients in the room
-    io.to(room).emit("receiveMessage", data);
+  socket.on("sendMessage", async (data) => {
+    const newMsg = new Message(data);
+    await newMsg.save();
+    io.emit("receiveMessage", data); // broadcast to all
   });
 
   socket.on("disconnect", () => {
